@@ -68,7 +68,7 @@ const resumeData = {
       description: "Engineered a Kivy-based Wishlist app with features to add, view, update, and store user data for a user-friendly item management experience. Designed an intuitive interface prioritizing ease of use, contributing to a 15% increase in positive user feedback. Implemented local data caching to enable offline access, resolving reliability challenges and enhancing overall app usability."
     }
   ],
-  resumeLink: "https://your-cloudflare-link.com/Resume.pdf"
+  resumeLink: "https://pub-ebbe76c3985b4604b8d5d0885d75ccfd.r2.dev/Resume.pdf"
 };
 
 db.collection('profileInfo').doc('resume').set(resumeData)
