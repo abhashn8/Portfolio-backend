@@ -32,7 +32,6 @@ async function generateAndStoreEmbeddings() {
         });
         console.log(`Response for document ${doc.id}:`, response.data);
 
-        // Determine the embedding array depending on the response structure
         let embeddingData;
         if (Array.isArray(response.data)) {
           embeddingData = response.data;
