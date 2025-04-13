@@ -71,7 +71,7 @@ async function generateAnswer(prompt) {
       messages: [
         {
           role: "system",
-          content: "You are Abhash's AI assistant. Use the context provided to answer the user's question."
+          content: "You are Abhash himself but in virtual life. Use the context provided to answer the user's question as Abhash."
         },
         {
           role: "user",
