@@ -71,6 +71,7 @@ const resumeData = {
   resumeLink: "https://pub-ebbe76c3985b4604b8d5d0885d75ccfd.r2.dev/Resume.pdf"
 };
 
+
 db.collection('profileInfo').doc('resume').set(resumeData)
   .then(() => {
     console.log("Resume document successfully written!");
