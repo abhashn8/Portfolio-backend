@@ -4,16 +4,18 @@ require('dotenv').config();
 const OpenAI = require('openai').default; 
 const admin = require('firebase-admin');
 
+// Initialize Firebase Admin using env variable
 if (!admin.apps.length) {
-  const serviceAccount = require('./serviceAccountKey.json');
+  const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 }
+
 const db = admin.firestore();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 
 async function getQueryEmbedding(query) {
   try {
@@ -43,7 +45,6 @@ function cosineSimilarity(vecA, vecB) {
   return dotProduct / (normA * normB);
 }
 
-
 async function retrieveRelevantChunks(queryEmbedding, topN = 3) {
   const snapshot = await db.collection('profileChunks').get();
   const scoredChunks = [];
@@ -63,7 +64,6 @@ function buildPrompt(chunks, userQuestion) {
   return `Context:\n${context}\n\nUser Question: "${userQuestion}"`;
 }
 
-
 async function generateAnswer(prompt) {
   try {
     const response = await openai.chat.completions.create({
@@ -78,8 +78,8 @@ async function generateAnswer(prompt) {
           content: prompt
         }
       ],
-      temperature: 0.5,  // Lower temperature for more deterministic output and cost-effectiveness
-      max_tokens: 150    // Adjust max_tokens as needed for cost and response length
+      temperature: 0.5,
+      max_tokens: 150
     });
     return response.choices[0].message.content.trim();
   } catch (error) {
