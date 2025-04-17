@@ -1,22 +1,26 @@
 // rag.cjs
-
 require('dotenv').config();
-const OpenAI = require('openai').default; 
+const OpenAI = require('openai').default;
 const admin = require('firebase-admin');
 
-// Initialize Firebase Admin using env variable
-if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+// 1. Validate and parse Firebase config from env
+const firebaseConfigRaw = process.env.FIREBASE_CONFIG;
+if (!firebaseConfigRaw) {
+  throw new Error('Missing FIREBASE_CONFIG environment variable.');
+}
+const serviceAccount = JSON.parse(firebaseConfigRaw);
 
+// 2. Initialize Firebase Admin SDK
+if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 }
 
 const db = admin.firestore();
-
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// 3. RAG pipeline functions
 async function getQueryEmbedding(query) {
   try {
     const response = await openai.embeddings.create({
@@ -29,11 +33,11 @@ async function getQueryEmbedding(query) {
     } else if (response.data && Array.isArray(response.data.data)) {
       embeddingData = response.data.data;
     } else {
-      throw new Error("Unexpected response format in getQueryEmbedding");
+      throw new Error('Unexpected response format in getQueryEmbedding');
     }
     return embeddingData[0].embedding;
   } catch (error) {
-    console.error("Error generating query embedding:", error);
+    console.error('Error generating query embedding:', error);
     throw error;
   }
 }
@@ -67,23 +71,20 @@ function buildPrompt(chunks, userQuestion) {
 async function generateAnswer(prompt) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: 'gpt-3.5-turbo',
       messages: [
         {
-          role: "system",
+          role: 'system',
           content: "You are Abhash himself but in virtual life. Use the context provided to answer the user's question as Abhash."
         },
-        {
-          role: "user",
-          content: prompt
-        }
+        { role: 'user', content: prompt }
       ],
       temperature: 0.5,
       max_tokens: 150
     });
     return response.choices[0].message.content.trim();
   } catch (error) {
-    console.error("Error generating answer:", error);
+    console.error('Error generating answer:', error);
     throw error;
   }
 }
