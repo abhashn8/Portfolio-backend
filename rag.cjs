@@ -1,4 +1,6 @@
 // rag.cjs
+console.log("FIREBASE_CONFIG present?", Boolean(process.env.FIREBASE_CONFIG));
+
 require('dotenv').config();
 const OpenAI = require('openai').default;
 const admin = require('firebase-admin');
