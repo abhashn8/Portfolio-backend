@@ -1,12 +1,15 @@
-// uploadResumeChunks.js
+// uploadResumeChunks.js (ES Module version)
 
-const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
+import admin from 'firebase-admin';
+import serviceAccount from './serviceAccountKey.json' assert { type: 'json' };
+import 'dotenv/config';
 
 // Initialize Firebase Admin SDK
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
 
 const db = admin.firestore();
 
@@ -62,102 +65,55 @@ const resumeData = {
 };
 
 const chunks = [];
-
 // 1. Education Chunk
 if (resumeData.education) {
   const { degree, institution, location, graduation, honors } = resumeData.education;
   const educationText = `${resumeData.name} earned a ${degree} from ${institution} in ${location}. Expected graduation: ${graduation}. Honors: ${honors}.`;
-  chunks.push({
-    text: educationText,
-    embedding: [], // Placeholder for the embedding vector
-    metadata: { type: 'education', source: 'resume' }
-  });
+  chunks.push({ text: educationText, embedding: [], metadata: { type: 'education', source: 'resume' } });
 }
-
 // 2. Technical Skills Chunk
 if (resumeData.technicalSkills) {
-  chunks.push({
-    text: `Technical Skills: ${resumeData.technicalSkills}`,
-    embedding: [],
-    metadata: { type: 'technicalSkills', source: 'resume' }
-  });
+  chunks.push({ text: `Technical Skills: ${resumeData.technicalSkills}`, embedding: [], metadata: { type: 'technicalSkills', source: 'resume' } });
 }
-
 // 3. Coursework and Certifications Chunk
 if (resumeData.relevantCourseworkAndCertifications) {
   const { coursework, certifications } = resumeData.relevantCourseworkAndCertifications;
   const courseworkText = `Coursework: ${coursework}. Certifications: ${certifications}.`;
-  chunks.push({
-    text: courseworkText,
-    embedding: [],
-    metadata: { type: 'coursework', source: 'resume' }
+  chunks.push({ text: courseworkText, embedding: [], metadata: { type: 'coursework', source: 'resume' } });
+}
+// 4. Professional Experience Chunks
+if (resumeData.professionalExperience) {
+  resumeData.professionalExperience.forEach((exp, i) => {
+    const experienceText = `Experience: ${exp.role} at ${exp.company}, ${exp.location} (${exp.duration}). ${exp.description}`;
+    chunks.push({ text: experienceText, embedding: [], metadata: { type: 'experience', source: 'resume', index: i } });
   });
 }
-
-// 4. Professional Experience Chunks (one per experience)
-if (resumeData.professionalExperience && Array.isArray(resumeData.professionalExperience)) {
-  resumeData.professionalExperience.forEach((experience, index) => {
-    const { role, company, location, duration, description } = experience;
-    const experienceText = `Experience: ${role} at ${company}, ${location} (${duration}). ${description}`;
-    chunks.push({
-      text: experienceText,
-      embedding: [],
-      metadata: { type: 'experience', source: 'resume', index }
-    });
+// 5. Technical Projects Chunks
+if (resumeData.technicalProjects) {
+  resumeData.technicalProjects.forEach((proj, i) => {
+    const projectText = `Project: ${proj.name}. Technologies: ${proj.technologies}. ${proj.description}`;
+    chunks.push({ text: projectText, embedding: [], metadata: { type: 'project', source: 'resume', index: i } });
   });
 }
-
-// 5. Technical Projects Chunks (one per project)
-if (resumeData.technicalProjects && Array.isArray(resumeData.technicalProjects)) {
-  resumeData.technicalProjects.forEach((project, index) => {
-    const { name, technologies, description } = project;
-    const projectText = `Project: ${name}. Technologies: ${technologies}. ${description}`;
-    chunks.push({
-      text: projectText,
-      embedding: [],
-      metadata: { type: 'project', source: 'resume', index }
-    });
-  });
-}
-
 // 6. Contact Information Chunk
 if (resumeData.contact) {
   const { email, phone, linkedin, github } = resumeData.contact;
   const contactText = `Contact: Email: ${email}, Phone: ${phone}, LinkedIn: ${linkedin}, GitHub: ${github}.`;
-  chunks.push({
-    text: contactText,
-    embedding: [],
-    metadata: { type: 'contact', source: 'resume' }
-  });
+  chunks.push({ text: contactText, embedding: [], metadata: { type: 'contact', source: 'resume' } });
 }
-
-// 7. Resume Link Chunk (optional)
+// 7. Resume Link Chunk
 if (resumeData.resumeLink) {
-  const linkText = `Resume Link: ${resumeData.resumeLink}`;
-  chunks.push({
-    text: linkText,
-    embedding: [],
-    metadata: { type: 'resumeLink', source: 'resume' }
-  });
+  chunks.push({ text: `Resume Link: ${resumeData.resumeLink}`, embedding: [], metadata: { type: 'resumeLink', source: 'resume' } });
 }
+// 8. Personality & Interests Chunks
+chunks.push({ text: `Interests: Academics is only 30% of my life; sports occupy the major part. I love cricket and soccer since childhood. I captained my high school cricket team to a District Championship and trained by top coaches in Nepal. I play soccer weekly and have seen Messi play live and watched Barcelona at Camp Nou. Other sports I enjoy: ping pong, chess, and pool tennis.`, embedding: [], metadata: { type: 'interests', source: 'resume' } });
+chunks.push({ text: `Interests: I'm a huge music lover with diverse tastes—Nepali, Bollywood, international genres. Favorites: pop and country. I've attended concerts for Post Malone, Ed Sheeran, and Luke Combs.`, embedding: [], metadata: { type: 'interests', source: 'resume' } });
+chunks.push({ text: `Interests: I love traveling and hiking. In the US, I've hiked in High Point, Delaware Water Gap, Ithaca, and the Catskills in NY. I'm a fun-loving person and community volunteer.`, embedding: [], metadata: { type: 'interests', source: 'resume' } });
+chunks.push({ text: `Volunteer Work: In Nepal, I taught rural communities about voting. In the US, I volunteered with PyData NYC 2023 at Microsoft Office in Manhattan—introducing speakers, assisting guests, and participating in CS events throughout Manhattan.`, embedding: [], metadata: { type: 'volunteering', source: 'resume' } });
 
-const promises = chunks.map((chunk, index) => {
-  const docId = `chunk_${String(index + 1).padStart(3, '0')}`;
-  return db.collection('profileChunks').doc(docId).set(chunk)
-    .then(() => {
-      console.log(`Chunk ${docId} written successfully.`);
-    })
-    .catch((error) => {
-      console.error(`Error writing chunk ${docId}:`, error);
-    });
-});
-
-Promise.all(promises)
-  .then(() => {
-    console.log("All chunks written successfully!");
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error("Error writing chunks:", error);
-    process.exit(1);
-  });
+// Upload Chunks
+await Promise.all(
+  chunks.map((chunk, index) => db.collection('profileChunks').doc(`chunk_${String(index+1).padStart(3,'0')}`).set(chunk))
+);
+console.log("All chunks written successfully!");
+process.exit(0);
