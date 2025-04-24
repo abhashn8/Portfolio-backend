@@ -87,6 +87,8 @@ resumeData.professionalExperience.forEach((exp, i) => {
 resumeData.technicalProjects.forEach((proj, i) => {
   chunks.push({ text: `Project: ${proj.name}. Technologies: ${proj.technologies}. ${proj.description}`, metadata: { type: 'project', source: 'resume', index: i } });
 });
+// Add recent chat app project
+chunks.push({ text: `Recent Project: Developing a chat application using OpenAI's API with advanced prompt engineering to emulate my virtual persona. Stored conversation data in Firestore and implemented RAG using vector databases so the AI leverages my personal data for contextually accurate responses.`, metadata: { type: 'project', source: 'resume', index: resumeData.technicalProjects.length } });
 if (resumeData.contact) {
   const { email, phone, linkedin, github } = resumeData.contact;
   chunks.push({ text: `Contact: Email: ${email}, Phone: ${phone}, LinkedIn: ${linkedin}, GitHub: ${github}.`, metadata: { type: 'contact', source: 'resume' } });
@@ -118,7 +120,7 @@ for (let i = 0; i < chunks.length; i++) {
       embedding,
       metadata: chunk.metadata
     });
-    console.log(`✅ ${docId} written with embedding`);
+    console.log(`${docId} written with embedding`);
   } catch (err) {
     console.error(`❌ Error writing ${docId}:`, err);
   }
