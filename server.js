@@ -3,17 +3,11 @@ import dotenv from 'dotenv';
 import admin from 'firebase-admin';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import serviceAccount from './serviceAccountKey.json' assert { type: 'json' };  // directly import service account
 
 dotenv.config();
 
-// 1. Validate and parse Firebase config from env
-const firebaseConfigRaw = process.env.FIREBASE_CONFIG;
-if (!firebaseConfigRaw) {
-  throw new Error('Missing FIREBASE_CONFIG environment variable.');
-}
-const serviceAccount = JSON.parse(firebaseConfigRaw);
-
-// 2. Initialize Firebase Admin SDK
+// 1. Initialize Firebase Admin SDK with service account
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -22,17 +16,17 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// 3. Set up Express
+// 2. Set up Express
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
-// 4. Import RAG functions (CommonJS interop)
+// 3. Import RAG functions (CommonJS interop)
 import rag from './rag.cjs';
 const { getQueryEmbedding, retrieveRelevantChunks, buildPrompt, generateAnswer } = rag;
 
-// 5. Routes
+// 4. Routes
 app.get('/', (req, res) => res.send("Welcome to Abhash's backend server!"));
 
 app.get('/api/test-firestore', async (req, res) => {
@@ -58,13 +52,13 @@ app.post('/api/askOpenAI', async (req, res) => {
       return res.status(400).json({ answer: 'Please ask a valid question.' });
     }
 
-    // Log every user prompt to Firestore for FAQ insight
+    // Log the user prompt to Firestore for FAQ insights
     await db.collection('faqLogs').add({
       question: userInput,
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Run RAG pipeline
+    // Execute RAG pipeline
     const queryEmbedding = await getQueryEmbedding(userInput);
     const relevantChunks = await retrieveRelevantChunks(queryEmbedding, 3);
     const prompt = buildPrompt(relevantChunks, userInput);
@@ -77,5 +71,5 @@ app.post('/api/askOpenAI', async (req, res) => {
   }
 });
 
-// 6. Start server
+// 5. Start server
 app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
