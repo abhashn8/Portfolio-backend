@@ -52,14 +52,24 @@ app.get('/api/test-firestore', async (req, res) => {
 
 app.post('/api/askOpenAI', async (req, res) => {
   try {
-    const userInput = req.body.question;
+    const userInputRaw = req.body.question;
+    const userInput = userInputRaw?.trim();
     if (!userInput) {
       return res.status(400).json({ answer: 'Please ask a valid question.' });
     }
+
+    // Log every user prompt to Firestore for FAQ insight
+    await db.collection('faqLogs').add({
+      question: userInput,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Run RAG pipeline
     const queryEmbedding = await getQueryEmbedding(userInput);
     const relevantChunks = await retrieveRelevantChunks(queryEmbedding, 3);
     const prompt = buildPrompt(relevantChunks, userInput);
     const answer = await generateAnswer(prompt);
+
     return res.json({ answer });
   } catch (error) {
     console.error('Error processing /api/askOpenAI:', error);
